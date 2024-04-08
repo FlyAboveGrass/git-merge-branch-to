@@ -1,6 +1,6 @@
 {
-  "name": "merge-code",
-  "displayName": "merge-code",
+  "name": "merge-code-to",
+  "displayName": "merge-code-to",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -21,16 +21,15 @@
       }
     ],
     "configuration": {
-      "title": "Git Worktree Manager",
+      "title": "Git Merge Branch To",
       "properties": {
-        "gitWorktreeManager.branches": {
+        "gitMergeBranchTo.branches": {
           "type": "array",
-          "default": [
-            "develop",
-            "release",
-            "master"
-          ],
-          "description": "List of branches to be used for creating worktrees."
+          "default": [],
+          "description": "可以合并到哪些分支内？",
+          "items": {
+            "type": "string"
+          }
         }
       }
     }
