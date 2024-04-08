@@ -14,55 +14,13 @@ function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
   if (worktreeExists) {
     try {
       // 删除工作区
-      execSync(`git -C "${repoPath}" worktree remove ${worktreeBranch}`, { stdio: 'inherit' });
-      execSync(`rm -rf "${worktreePath}"`, { stdio: 'inherit' });
+      execSync(`git -C "${repoPath}" worktree remove ${worktreeBranch}`, { stdio: "inherit" });
+      execSync(`rm -rf "${worktreePath}"`, { stdio: "inherit" });
     } catch (error) {
       vscode.window.showErrorMessage(`删除工作区失败: ${error.message}`);
     }
   }
 }
-
-function triggerWebhooks() {
-  const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
-  const urlConfigs = config.get("deployConfig").urlConfig || [];
-  if (!urlConfigs || !urlConfigs.length) {
-    return;
-  }
-
-  const envList = urlConfigs.map(item => item.env)
-  vscode.window
-    .showQuickPick(['不触发', ...envList], {
-      canPickMany: false,
-      placeHolder: "选择要触发webhook的环境",
-    }).then(async selectedEnv => {
-      if (selectedEnv === '不触发') {
-        return;
-      }
-
-      const projectName = await getGitProjectName()
-      if (!projectName) {
-        vscode.window.showErrorMessage("未找到当前项目名, 请确保当前项目目录存在git仓库内");
-        return;
-      }
-
-
-      const config = urlConfigs.find(urlConfig => urlConfig.env === selectedEnv)
-      if (!config || !config.serverWebhookMap || !config.serverWebhookMap[projectName] || !config.serverWebhookMap[projectName].hookUrl) {
-        vscode.window.showErrorMessage(`未找到 ${projectName} 的配置信息`);
-        return;
-      }
-
-      const webhookUrl = config.serverWebhookMap[projectName].hookUrl
-      try {
-        execSync(`curl --header "Content-Type: application/json" --request POST --data "{}" ${webhookUrl}`, { stdio: 'inherit' });
-      } catch (error) {
-        vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
-      }
-    })
-
-  
-}
-
 function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
   // 创建新的工作区
   try {
@@ -72,28 +30,76 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
     vscode.window.showErrorMessage(`创建新的工作区失败，请检查分支是否存在或者工作区是否已经创建 ${error.message}`);
     throw error;
   }
-  
 
   // 合并代码到指定分支
   try {
     execSync(`git -C "${worktreePath}" merge "${sourceBranch}"`, { stdio: "inherit" });
   } catch (error) {
-    vscode.window.showErrorMessage(`合并分支失败 ${sourceBranch} -> ${targetBranch}. 可能存在代码冲突，请手动处理。 ${error.message}`);
+    vscode.window.showErrorMessage(
+      `合并分支失败 ${sourceBranch} -> ${targetBranch}. 可能存在代码冲突，请手动处理。 ${error.message}`
+    );
     throw error;
   }
 
   try {
-    // execSync(`git -C "${worktreePath}" push -u origin "${targetBranch}"`, { stdio: 'inherit' });
-    vscode.window.showErrorMessage(`先不推送`);
+    execSync(`git -C "${worktreePath}" push -u origin "${targetBranch}"`, { stdio: 'inherit' });
   } catch (error) {
-    vscode.window.showErrorMessage(`推送失败 ${targetBranch}。请检查是否有推送该分支的权限或者检查网络连接是否正常。 ${error.message}`);
+    vscode.window.showErrorMessage(
+      `推送失败 ${targetBranch}。请检查是否有推送该分支的权限或者检查网络连接是否正常。 ${error.message}`
+    );
     throw error;
   }
-  
 
-  clearWorkTree({ repoPath, worktreePath, targetBranch })
+  clearWorkTree({ repoPath, worktreePath, targetBranch });
 
-  triggerWebhooks()
+  triggerWebhooks();
+
+  function triggerWebhooks() {
+    const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
+    const urlConfigs = config.get("deployConfig").urlConfig || [];
+    if (!urlConfigs || !urlConfigs.length) {
+      return;
+    }
+
+    const envList = urlConfigs.map((item) => item.env);
+    vscode.window
+      .showQuickPick(["不触发", ...envList], {
+        canPickMany: false,
+        placeHolder: "选择要触发webhook的环境",
+      })
+      .then(async (selectedEnv) => {
+        if (selectedEnv === "不触发") {
+          return;
+        }
+
+        const projectName = await getGitProjectName();
+        if (!projectName) {
+          vscode.window.showErrorMessage("未找到当前项目名, 请确保当前项目目录存在git仓库内");
+          return;
+        }
+
+        const config = urlConfigs.find((urlConfig) => urlConfig.env === selectedEnv);
+        if (
+          !config ||
+          !config.serverWebhookMap ||
+          !config.serverWebhookMap[projectName] ||
+          !config.serverWebhookMap[projectName].hookUrl
+        ) {
+          vscode.window.showErrorMessage(`未找到 ${projectName} 的配置信息`);
+          return;
+        }
+
+        const webhookUrl = config.serverWebhookMap[projectName].hookUrl;
+        try {
+          execSync(`curl --header "Content-Type: application/json" --request POST --data "{}" ${webhookUrl}`, {
+            stdio: "inherit",
+          });
+          vscode.window.showInformationMessage(`触发 webhook 成功`);
+        } catch (error) {
+          vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
+        }
+      });
+  }
 }
 
 function manageWorktrees() {
@@ -115,8 +121,10 @@ function manageWorktrees() {
       try {
         await workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch });
       } catch (error) {
-        clearWorkTree({ repoPath, worktreePath, targetBranch })
-        vscode.window.showErrorMessage(`合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`);
+        clearWorkTree({ repoPath, worktreePath, targetBranch });
+        vscode.window.showErrorMessage(
+          `合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`
+        );
       }
     });
 
