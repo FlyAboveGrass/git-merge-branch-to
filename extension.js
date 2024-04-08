@@ -5,56 +5,66 @@ const { execSync } = require("child_process");
 const { getGitProjectName } = require("./utils");
 
 const CANCEL = '退出操作'
-
-function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
-  const worktreeBranch = `${targetBranch}-worktree`;
-  const worktreeAbsolutePath = path.resolve(repoPath, worktreePath);
-
-  // 检查工作区路径是否存在
-  const worktreeExists = fs.existsSync(worktreeAbsolutePath);
-
-  if (worktreeExists) {
-    try {
-      // 删除工作区
-      execSync(`git -C "${repoPath}" worktree remove ${worktreeBranch}`, { stdio: "inherit" });
-      execSync(`rm -rf "${worktreePath}"`, { stdio: "inherit" });
-    } catch (error) {
-      vscode.window.showErrorMessage(`删除工作区失败: ${error.message}`);
-    }
-  }
-}
 function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
-  // 创建新的工作区
   try {
-    execSync(`git -C "${repoPath}" worktree add "${worktreePath}" "${targetBranch}"`, { stdio: "inherit" });
-    execSync(`git -C "${worktreePath}" switch "${targetBranch}"`, { stdio: "inherit" });
-  } catch (error) {
-    vscode.window.showErrorMessage(`创建新的工作区失败，请检查分支是否存在或者工作区是否已经创建 ${error.message}`);
-    throw error;
-  }
+      // 创建新的工作区
+    try {
+      execSync(`git -C "${repoPath}" worktree add "${worktreePath}" "${targetBranch}"`, { stdio: "inherit" });
+      execSync(`git -C "${worktreePath}" switch "${targetBranch}"`, { stdio: "inherit" });
+    } catch (error) {
+      vscode.window.showErrorMessage(`创建新的工作区失败，请检查分支是否存在或者工作区是否已经创建 ${error.message}`);
+      throw error;
+    }
 
-  // 合并代码到指定分支
-  try {
-    execSync(`git -C "${worktreePath}" merge "${sourceBranch}"`, { stdio: "inherit" });
+    // 合并代码到指定分支
+    try {
+      execSync(`git -C "${worktreePath}" merge "${sourceBranch}"`, { stdio: "inherit" });
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `合并分支失败 ${sourceBranch} -> ${targetBranch}. 可能存在代码冲突，请手动处理。 ${error.message}`
+      );
+      throw error;
+    }
+
+    try {
+      execSync(`git -C "${worktreePath}" push -u origin "${targetBranch}"`, { stdio: 'inherit' });
+    } catch (error) {
+      vscode.window.showErrorMessage(
+        `推送失败 ${targetBranch}。请检查是否有推送该分支的权限或者检查网络连接是否正常。 ${error.message}`
+      );
+      throw error;
+    }
+
+    clearWorkTree({ repoPath, worktreePath, targetBranch });
+
+    vscode.window.showInformationMessage(`合并分支 ${sourceBranch} -> ${targetBranch} 成功`);
   } catch (error) {
+    clearWorkTree({ repoPath, worktreePath, targetBranch });
     vscode.window.showErrorMessage(
-      `合并分支失败 ${sourceBranch} -> ${targetBranch}. 可能存在代码冲突，请手动处理。 ${error.message}`
+      `合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`
     );
-    throw error;
+    return;
   }
-
-  try {
-    execSync(`git -C "${worktreePath}" push -u origin "${targetBranch}"`, { stdio: 'inherit' });
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      `推送失败 ${targetBranch}。请检查是否有推送该分支的权限或者检查网络连接是否正常。 ${error.message}`
-    );
-    throw error;
-  }
-
-  clearWorkTree({ repoPath, worktreePath, targetBranch });
 
   triggerWebhooks();
+
+  function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
+    const worktreeBranch = `${targetBranch}-worktree`;
+    const worktreeAbsolutePath = path.resolve(repoPath, worktreePath);
+  
+    // 检查工作区路径是否存在
+    const worktreeExists = fs.existsSync(worktreeAbsolutePath);
+  
+    if (worktreeExists) {
+      try {
+        // 删除工作区
+        execSync(`git -C "${repoPath}" worktree remove ${worktreeBranch}`, { stdio: "inherit" });
+        execSync(`rm -rf "${worktreePath}"`, { stdio: "inherit" });
+      } catch (error) {
+        vscode.window.showErrorMessage(`删除工作区失败: ${error.message}`);
+      }
+    }
+  }
 
   function triggerWebhooks() {
     const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
@@ -124,14 +134,7 @@ function manageWorktrees() {
       const sourceBranch = await getCurrentBranchName();
       const worktreePath = path.join(repoPath, `${targetBranch}-worktree`);
 
-      try {
-        await workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch });
-      } catch (error) {
-        clearWorkTree({ repoPath, worktreePath, targetBranch });
-        vscode.window.showErrorMessage(
-          `合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`
-        );
-      }
+      workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch });
     });
 
   async function getCurrentBranchName() {
