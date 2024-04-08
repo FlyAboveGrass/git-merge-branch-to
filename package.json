@@ -1,6 +1,6 @@
 {
-  "name": "merge-code-to",
-  "displayName": "merge-code-to",
+  "name": "git-merge-branch-to",
+  "displayName": "gitMergeBranchTo",
   "description": "",
   "version": "0.0.1",
   "engines": {
