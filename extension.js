@@ -4,6 +4,8 @@ const fs = require("fs");
 const { execSync } = require("child_process");
 const { getGitProjectName } = require("./utils");
 
+const CANCEL = '退出操作'
+
 function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
   const worktreeBranch = `${targetBranch}-worktree`;
   const worktreeAbsolutePath = path.resolve(repoPath, worktreePath);
@@ -63,12 +65,12 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
 
     const envList = urlConfigs.map((item) => item.env);
     vscode.window
-      .showQuickPick(["不触发", ...envList], {
+      .showQuickPick([CANCEL, ...envList], {
         canPickMany: false,
         placeHolder: "选择要触发webhook的环境",
       })
       .then(async (selectedEnv) => {
-        if (selectedEnv === "不触发") {
+        if (selectedEnv === CANCEL) {
           return;
         }
 
@@ -116,7 +118,7 @@ function manageWorktrees() {
       placeHolder: "选择你要合并到哪个分支",
     })
     .then(async (targetBranch) => {
-      if (!targetBranch) return;
+      if (!targetBranch || targetBranch === CANCEL) return;
 
       const repoPath = vscode.workspace.rootPath;
       const sourceBranch = await getCurrentBranchName();
