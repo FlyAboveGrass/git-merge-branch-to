@@ -105,6 +105,10 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
 function manageWorktrees() {
   const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
   const branches = config.get("branches");
+  if (!branches || !branches.length) {
+    vscode.window.showErrorMessage("未找到配置的分支列表");
+    return;
+  }
 
   vscode.window
     .showQuickPick(branches, {
