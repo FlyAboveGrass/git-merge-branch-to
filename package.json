@@ -1,6 +1,6 @@
 {
   "name": "git-merge-branch-to",
-  "displayName": "gitMergeBranchTo",
+  "displayName": "Git Merge Branch To",
   "description": "",
   "version": "0.0.1",
   "engines": {
@@ -12,6 +12,8 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "publisher": "草上飞",
+  "icon": "images/icon.png",
   "main": "./extension.js",
   "contributes": {
     "commands": [
