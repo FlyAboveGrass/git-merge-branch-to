@@ -2,6 +2,7 @@ const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
 const { execSync } = require("child_process");
+const { getGitProjectName } = require("./utils");
 
 function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
   const worktreeBranch = `${targetBranch}-worktree`;
@@ -21,13 +22,53 @@ function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
   }
 }
 
+function triggerWebhooks() {
+  const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
+  const urlConfigs = config.get("deployConfig").urlConfig || [];
+  if (!urlConfigs || !urlConfigs.length) {
+    return;
+  }
+
+  const envList = urlConfigs.map(item => item.env)
+  vscode.window
+    .showQuickPick(['不触发', ...envList], {
+      canPickMany: false,
+      placeHolder: "选择要触发webhook的环境",
+    }).then(async selectedEnv => {
+      if (selectedEnv === '不触发') {
+        return;
+      }
+
+      const projectName = await getGitProjectName()
+      if (!projectName) {
+        vscode.window.showErrorMessage("未找到当前项目名, 请确保当前项目目录存在git仓库内");
+        return;
+      }
+
+
+      const config = urlConfigs.find(urlConfig => urlConfig.env === selectedEnv)
+      if (!config || !config.serverWebhookMap || !config.serverWebhookMap[projectName] || !config.serverWebhookMap[projectName].hookUrl) {
+        vscode.window.showErrorMessage(`未找到 ${projectName} 的配置信息`);
+        return;
+      }
+
+      const webhookUrl = config.serverWebhookMap[projectName].hookUrl
+      try {
+        execSync(`curl --header "Content-Type: application/json" --request POST --data "{}" ${webhookUrl}`, { stdio: 'inherit' });
+      } catch (error) {
+        vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
+      }
+    })
+
+  
+}
+
 function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
   // 创建新的工作区
   try {
     execSync(`git -C "${repoPath}" worktree add "${worktreePath}" "${targetBranch}"`, { stdio: "inherit" });
     execSync(`git -C "${worktreePath}" switch "${targetBranch}"`, { stdio: "inherit" });
   } catch (error) {
-    console.log(error);
     vscode.window.showErrorMessage(`创建新的工作区失败，请检查分支是否存在或者工作区是否已经创建 ${error.message}`);
     throw error;
   }
@@ -45,17 +86,18 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
     // execSync(`git -C "${worktreePath}" push -u origin "${targetBranch}"`, { stdio: 'inherit' });
     vscode.window.showErrorMessage(`先不推送`);
   } catch (error) {
-    console.log(error);
     vscode.window.showErrorMessage(`推送失败 ${targetBranch}。请检查是否有推送该分支的权限或者检查网络连接是否正常。 ${error.message}`);
     throw error;
   }
   
 
   clearWorkTree({ repoPath, worktreePath, targetBranch })
+
+  triggerWebhooks()
 }
 
 function manageWorktrees() {
-  const config = vscode.workspace.getConfiguration("gitWorktreeManager");
+  const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
   const branches = config.get("branches");
 
   vscode.window
@@ -73,7 +115,6 @@ function manageWorktrees() {
       try {
         await workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch });
       } catch (error) {
-        console.log('🚀-  -> .then  -> error:', error)
         clearWorkTree({ repoPath, worktreePath, targetBranch })
         vscode.window.showErrorMessage(`合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`);
       }
@@ -93,13 +134,13 @@ function manageWorktrees() {
 }
 
 exports.activate = function activate(context) {
-  let disposable = vscode.commands.registerCommand("gitWorktreeManager.merge-branch-to", manageWorktrees);
+  let disposable = vscode.commands.registerCommand("gitMergeBranchTo.merge-branch-to", manageWorktrees);
 
   context.subscriptions.push(disposable);
 
   // Add status bar item
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = "gitWorktreeManager.merge-branch-to";
+  statusBarItem.command = "gitMergeBranchTo.merge-branch-to";
   statusBarItem.text = "$(git-branch) 合并分支到";
   statusBarItem.tooltip = "合并分支到指定分支";
   statusBarItem.show();

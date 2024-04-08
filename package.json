@@ -30,6 +30,11 @@
           "items": {
             "type": "string"
           }
+        },
+        "gitMergeBranchTo.deployConfig": {
+          "type": "object",
+          "description": "配置流水线的环境及其对应的webhooks地址",
+          "default": {}
         }
       }
     }
