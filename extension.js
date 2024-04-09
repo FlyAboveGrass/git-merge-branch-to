@@ -16,6 +16,13 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
       throw error;
     }
 
+    try {
+      execSync(`git -C "${worktreePath}" pull`, { stdio: "inherit" });
+    } catch (error) {
+      vscode.window.showErrorMessage(`拉取${targetBranch}代码失败, 可能存在代码冲突，请手动处理。. ${error.message}`);
+      throw error;
+    }
+
     // 合并代码到指定分支
     try {
       execSync(`git -C "${worktreePath}" merge "${sourceBranch}"`, { stdio: "inherit" });
