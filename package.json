@@ -3,6 +3,7 @@
   "displayName": "Git Merge Branch To",
   "description": "",
   "version": "0.0.1",
+  "repository": "https://github.com/FlyAboveGrass/git-merge-branch-to",
   "engines": {
     "vscode": "^1.88.0"
   },
@@ -12,7 +13,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "publisher": "草上飞",
+  "publisher": "FlyAboveGrass",
   "icon": "images/icon.png",
   "main": "./extension.js",
   "contributes": {
