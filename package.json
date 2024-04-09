@@ -38,6 +38,10 @@
           "type": "object",
           "description": "配置流水线的环境及其对应的webhooks地址",
           "default": {}
+        },
+        "gitMergeBranchTo.feishuId": {
+          "type": "string",
+          "description": "自己的飞书id，用于做机器人通知（选填）"
         }
       }
     }

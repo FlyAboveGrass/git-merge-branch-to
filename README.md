@@ -45,7 +45,7 @@
   "gitMergeBranchTo.branches": [
     "develop",
     "uat"
-  ]
+  ],
   // 配置分支合并后的流水线触发配置。没有可不填
   "gitMergeBranchTo.deployConfig": {
     "projectList": ["monkey-cms-web-new", "monkey-saas-enterprise-web", "monkey-saas-web"], // 没用。跟 webstorm 的配置保持一致
@@ -62,6 +62,9 @@
         }
       }
     ]
-  }
+  },
+  // 飞书ID。用户飞书机器人的通知。可不填
+  // 如何获取飞书ID？ https://bytedance.larkoffice.com/docs/doccnmbdb5jrCesYGpdSdIZcRDg
+  "gitMergeBranchTo.feishuId": "6943778355237912604"
 }
 ```
