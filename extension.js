@@ -101,12 +101,20 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
           return;
         }
 
-        const webhookUrl = config.serverWebhookMap[projectName].hookUrl;
+        const {hookUrl: webhookUrl, webUrl } = config.serverWebhookMap[projectName];
         try {
           execSync(`curl --header "Content-Type: application/json" --request POST --data "{}" ${webhookUrl}`, {
             stdio: "inherit",
           });
-          vscode.window.showInformationMessage(`触发 webhook 成功`);
+          vscode.window.showInformationMessage(
+            `触发 webhook 成功。${webUrl ? `[查看流水线](${webUrl})` : ''}`,
+            { modal: false },
+            { title: 'Open in Browser', command: 'vscode.open' }
+          ).then(selection => {
+            if (selection?.command === 'vscode.open') {
+              vscode.env.openExternal(vscode.Uri.parse(webUrl));
+            }
+          });
         } catch (error) {
           vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
         }
