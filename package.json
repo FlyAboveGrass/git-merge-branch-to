@@ -2,7 +2,7 @@
   "name": "git-merge-branch-to",
   "displayName": "Git Merge Branch To",
   "description": "",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": "https://github.com/FlyAboveGrass/git-merge-branch-to",
   "engines": {
     "vscode": "^1.88.0"
