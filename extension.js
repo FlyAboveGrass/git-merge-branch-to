@@ -133,7 +133,8 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
 
         const { hookUrl: webhookUrl, webUrl } = config.serverWebhookMap[projectName];
         const feishuId = vscode.workspace.getConfiguration("gitMergeBranchTo").get("feishuId");
-        const data = JSON.stringify({ feishuId: feishuId });
+        const branch = config.defaultBranch
+        const data = JSON.stringify({ feishuId: feishuId, branch });
         try {
           execSync(`curl --header "Content-Type: application/json" --request POST --data '${data}' ${webhookUrl}`, {
             stdio: "inherit",
