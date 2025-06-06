@@ -161,17 +161,28 @@ function manageWorktrees() {
   const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
   const branches = config.get("branches");
 
+  // 适配预约小程序，不配置分支
   if (!branches || !branches.length) {
     const sourceBranch = getCurrentBranchName();
     const targetBranch = sourceBranch.replace("feature/", "release/");
     process.chdir(vscode.workspace.rootPath);
     const isExistRemoteTargetBranch = execSync(`git ls-remote --heads origin ${targetBranch}`).toString();
 
-    if (isExistRemoteTargetBranch) {
-      execFlow(targetBranch);
-    } else {
-      vscode.window.showErrorMessage("未找到配置的分支列表");
+    if (!isExistRemoteTargetBranch) {
+      try {
+        // 从远程的master分支创建本地分支
+        execSync(`git branch ${targetBranch} origin/master`);
+        // 推送到远程
+        execSync(`git push origin ${targetBranch}`);
+        vscode.window.showInformationMessage(`已创建远程分支 ${targetBranch} 并推送到远端`);
+      } catch (error) {
+        vscode.window.showErrorMessage(`创建分支 ${targetBranch} 失败: ${error.message}`);
+        // 如果创建分支失败，则终止后续流程
+        return;
+      }
     }
+
+    execFlow(targetBranch);
 
     return;
   }
