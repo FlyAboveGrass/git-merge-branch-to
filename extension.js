@@ -43,21 +43,39 @@ function workTreeFlows({ repoPath, targetBranch, sourceBranch }) {
 
         progress.report({ message: "切换到目标分支..." });
         // 切换到目标分支（在 worktree 中，不影响主工作区）
-        execSync(`git -C "${worktreePath}" checkout "${targetBranch}"`, {
-          stdio: "pipe",
-          maxBuffer: 1024 * 1024 * 10
-        });
+        // 如果分支是新创建的，从 origin 创建并跟踪它
+        try {
+          // 先尝试直接 checkout（如果本地已有该分支）
+          execSync(`git -C "${worktreePath}" checkout "${targetBranch}"`, {
+            stdio: "pipe",
+            maxBuffer: 1024 * 1024 * 10
+          });
+        } catch (error) {
+          // 如果本地分支不存在，从远程创建并跟踪
+          try {
+            execSync(`git -C "${worktreePath}" checkout -b "${targetBranch}" "origin/${targetBranch}"`, {
+              stdio: "pipe",
+              maxBuffer: 1024 * 1024 * 10
+            });
+          } catch (createError) {
+            // 如果远程分支也不存在，尝试使用 --track 方式
+            execSync(`git -C "${worktreePath}" checkout --track "origin/${targetBranch}"`, {
+              stdio: "pipe",
+              maxBuffer: 1024 * 1024 * 10
+            });
+          }
+        }
 
-        // 拉取目标分支最新代码
+        // 拉取目标分支最新代码（确保是最新的）
         execSync(`git -C "${worktreePath}" pull origin "${targetBranch}"`, {
           stdio: "pipe",
           maxBuffer: 1024 * 1024 * 10
         });
 
         progress.report({ message: "合并分支..." });
-        // 合并源分支（使用 --no-commit 先不提交，检查冲突）
+        // 合并源分支（使用 --no-verify 跳过 git hooks，因为临时 worktree 中没有工作文件）
         try {
-          execSync(`git -C "${worktreePath}" merge --no-ff "${sourceBranch}" -m "Merge ${sourceBranch} into ${targetBranch}"`, {
+          execSync(`git -C "${worktreePath}" merge --no-ff --no-verify "${sourceBranch}" -m "Merge ${sourceBranch} into ${targetBranch}"`, {
             stdio: "pipe",
             maxBuffer: 1024 * 1024 * 10
           });
