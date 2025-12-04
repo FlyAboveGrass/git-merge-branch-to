@@ -68,11 +68,11 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
           throw error;
         }
 
-        await clearWorkTree({ repoPath, worktreePath, targetBranch });
+        await clearWorkTree({ repoPath, worktreePath });
 
         vscode.window.showInformationMessage(`合并分支 ${sourceBranch} -> ${targetBranch} 成功`);
       } catch (error) {
-        await clearWorkTree({ repoPath, worktreePath, targetBranch });
+        await clearWorkTree({ repoPath, worktreePath });
         vscode.window.showErrorMessage(
           `合并分支失败 ${sourceBranch} -> ${targetBranch}: ${error.message} ${error.stderr}`
         );
@@ -85,7 +85,7 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
     }
   );
 
-  async function clearWorkTree({ repoPath, worktreePath, targetBranch }) {
+  async function clearWorkTree({ repoPath, worktreePath }) {
     const worktreeAbsolutePath = path.resolve(repoPath, worktreePath);
 
     // 检查工作区路径是否存在
