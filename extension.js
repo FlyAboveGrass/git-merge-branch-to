@@ -179,18 +179,18 @@ function manageWorktrees() {
   if (!branches || !branches.length) {
     const sourceBranch = getCurrentBranchName();
     const targetBranch = sourceBranch.replace("feature/", "release/");
-    process.chdir(vscode.workspace.rootPath);
+    const repoPath = vscode.workspace.rootPath;
     const isExistRemoteTargetBranch = execSync(
-      `git ls-remote --heads origin ${targetBranch}`,
+      `git -C "${repoPath}" ls-remote --heads origin ${targetBranch}`,
       EXEC_SYNC_OPTIONS
     ).toString();
 
     if (!isExistRemoteTargetBranch) {
       try {
         // 从远程的master分支创建本地分支
-        execSync(`git branch ${targetBranch} origin/master`, EXEC_SYNC_OPTIONS);
+        execSync(`git -C "${repoPath}" branch ${targetBranch} origin/master`, EXEC_SYNC_OPTIONS);
         // 推送到远程
-        execSync(`git push origin ${targetBranch}`, EXEC_SYNC_OPTIONS);
+        execSync(`git -C "${repoPath}" push origin ${targetBranch}`, EXEC_SYNC_OPTIONS);
         vscode.window.showInformationMessage(`已创建远程分支 ${targetBranch} 并推送到远端`);
       } catch (error) {
         vscode.window.showErrorMessage(`创建分支 ${targetBranch} 失败: ${error.message}`);
