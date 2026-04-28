@@ -1,3 +1,9 @@
+.DS_Store
+.eslintcache
+.history/
+.idea/
+*.log
 node_modules
+out
 .vscode-test/
 *.vsix
