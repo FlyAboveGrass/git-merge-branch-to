@@ -4,6 +4,12 @@ All notable changes to the "merge-code" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.4] - 2026-05-12
+
+### Fixed
+- 修复在 Git worktree 中触发 webhook 时项目名识别错误的问题：改为基于 `git rev-parse --git-common-dir` 解析真实仓库名，而不是直接使用 worktree 目录名
+
+
 ## [1.2.2] - 2024-XX-XX
 
 ### Fixed

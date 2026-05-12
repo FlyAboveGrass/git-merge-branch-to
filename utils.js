@@ -1,6 +1,37 @@
 const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
+
+const EXEC_SYNC_OPTIONS = {
+	stdio: 'pipe',
+};
+
+function resolveGitProjectName(rootPath, deps = {}) {
+	const {
+		existsSync = fs.existsSync,
+		execSync: runExecSync = execSync,
+	} = deps;
+
+	if (!existsSync(path.join(rootPath, '.git'))) {
+		return null;
+	}
+
+	try {
+		const gitCommonDir = runExecSync(`git -C "${rootPath}" rev-parse --git-common-dir`, EXEC_SYNC_OPTIONS)
+			.toString()
+			.trim();
+
+		if (!gitCommonDir) {
+			return path.basename(rootPath);
+		}
+
+		const resolvedGitCommonDir = path.resolve(rootPath, gitCommonDir);
+		return path.basename(path.dirname(resolvedGitCommonDir));
+	} catch (error) {
+		return path.basename(rootPath);
+	}
+}
 
 async function getGitProjectName() {
   const rootUri = vscode.workspace.workspaceFolders?.[0].uri; // 获取第一个工作空间的根目录 URI
@@ -23,11 +54,12 @@ async function getGitProjectName() {
     return null;
   }
 
-  const gitProjectName = path.basename(rootPath); // 获取根目录的基名，即项目名称
+  const gitProjectName = resolveGitProjectName(rootPath);
 
   return gitProjectName;
 }
 
 module.exports = {
+  resolveGitProjectName,
   getGitProjectName,
 };
