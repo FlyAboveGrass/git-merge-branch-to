@@ -4,6 +4,11 @@ All notable changes to the "merge-code" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.2.5] - 2026-07-22
+
+### Fixed
+- 修复临时 worktree 缺少 Husky 运行文件时无法创建 merge commit 的问题
+
 ## [1.2.4] - 2026-05-12
 
 ### Fixed

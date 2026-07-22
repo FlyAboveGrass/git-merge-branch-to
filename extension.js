@@ -51,7 +51,7 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
 
         // 合并代码到指定分支
         try {
-          execSync(`git -C "${worktreePath}" merge "${sourceBranch}"`, EXEC_SYNC_OPTIONS);
+          execSync(`git -C "${worktreePath}" merge --no-verify "${sourceBranch}"`, EXEC_SYNC_OPTIONS);
         } catch (error) {
           vscode.window.showErrorMessage(
             `合并分支失败 ${sourceBranch} -> ${targetBranch}. 可能存在代码冲突，请手动处理。 ${error.message}`
