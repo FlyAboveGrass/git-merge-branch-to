@@ -33,6 +33,12 @@ function resolveGitProjectName(rootPath, deps = {}) {
 	}
 }
 
+function findAutomaticWebhookEnvironment(urlConfigs, projectName, targetBranch) {
+	return urlConfigs.find(
+		(config) => config.serverWebhookMap?.[projectName]?.autoTriggerBranch === targetBranch
+	);
+}
+
 async function getGitProjectName() {
   const rootUri = vscode.workspace.workspaceFolders?.[0].uri; // 获取第一个工作空间的根目录 URI
   if (!rootUri) {
@@ -60,6 +66,7 @@ async function getGitProjectName() {
 }
 
 module.exports = {
+  findAutomaticWebhookEnvironment,
   resolveGitProjectName,
   getGitProjectName,
 };

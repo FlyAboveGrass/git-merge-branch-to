@@ -39,6 +39,19 @@
           "description": "配置流水线的环境及其对应的webhooks地址",
           "default": {}
         },
+        "gitMergeBranchTo.webhookTriggerMode": {
+          "type": "string",
+          "enum": [
+            "manual",
+            "automatic"
+          ],
+          "enumDescriptions": [
+            "合并完成后手动选择要触发的 webhook 环境",
+            "合并完成后按项目配置的 autoTriggerBranch 自动触发 webhook"
+          ],
+          "default": "manual",
+          "description": "分支合并完成后的 webhook 触发方式"
+        },
         "gitMergeBranchTo.feishuId": {
           "type": "string",
           "description": "自己的飞书id，用于做机器人通知（选填）"

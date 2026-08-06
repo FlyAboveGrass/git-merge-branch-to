@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { execSync } = require("child_process");
-const { getGitProjectName } = require("./utils");
+const { findAutomaticWebhookEnvironment, getGitProjectName } = require("./utils");
 
 const CANCEL = "退出操作";
 
@@ -79,7 +79,7 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
         return;
       }
 
-      triggerWebhooks();
+      triggerWebhooks(targetBranch);
 
       progress.report({ message: "merge process finished ..." });
     }
@@ -108,11 +108,28 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
     }
   }
 
-  function triggerWebhooks() {
+  // 合并完成后，手动模式保留环境选择；自动模式按项目和目标分支直接匹配 webhook。
+  function triggerWebhooks(targetBranch) {
     const config = vscode.workspace.getConfiguration("gitMergeBranchTo");
     const urlConfigs = config.get("deployConfig").urlConfig || [];
     const branches = config.get("branches") || [];
-    if (!urlConfigs.length || !branches.length) {
+    const triggerMode = config.get("webhookTriggerMode", "manual");
+    if (!urlConfigs.length || (triggerMode === "manual" && !branches.length)) {
+      return;
+    }
+
+    if (triggerMode === "automatic") {
+      getGitProjectName().then((projectName) => {
+        if (!projectName) {
+          vscode.window.showErrorMessage("未找到当前项目名, 请确保当前项目目录存在git仓库内");
+          return;
+        }
+
+        const environmentConfig = findAutomaticWebhookEnvironment(urlConfigs, projectName, targetBranch);
+        if (environmentConfig) {
+          triggerWebhook(environmentConfig, projectName);
+        }
+      });
       return;
     }
 
@@ -133,41 +150,41 @@ function workTreeFlows({ repoPath, worktreePath, targetBranch, sourceBranch }) {
           return;
         }
 
-        const config = urlConfigs.find((urlConfig) => urlConfig.env === selectedEnv);
-        if (
-          !config ||
-          !config.serverWebhookMap ||
-          !config.serverWebhookMap[projectName] ||
-          !config.serverWebhookMap[projectName].hookUrl
-        ) {
-          vscode.window.showErrorMessage(`未找到 ${projectName} 的配置信息`);
-          return;
-        }
-
-        const { hookUrl: webhookUrl, webUrl } = config.serverWebhookMap[projectName];
-        const feishuId = vscode.workspace.getConfiguration("gitMergeBranchTo").get("feishuId");
-        const branch = config.defaultBranch;
-        const data = JSON.stringify({ feishuId: feishuId, branch });
-        try {
-          execSync(
-            `curl --header "Content-Type: application/json" --request POST --data '${data}' ${webhookUrl}`,
-            EXEC_SYNC_OPTIONS
-          );
-          vscode.window
-            .showInformationMessage(
-              `触发 webhook 成功。${webUrl ? `[查看流水线](${webUrl})` : ""}`,
-              { modal: false },
-              { title: "Open in Browser", command: "vscode.open" }
-            )
-            .then((selection) => {
-              if (selection?.command === "vscode.open") {
-                vscode.env.openExternal(vscode.Uri.parse(webUrl));
-              }
-            });
-        } catch (error) {
-          vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
-        }
+        const environmentConfig = urlConfigs.find((urlConfig) => urlConfig.env === selectedEnv);
+        triggerWebhook(environmentConfig, projectName);
       });
+  }
+
+  // 校验项目配置并执行请求，供手动和自动模式复用同一触发流程。
+  function triggerWebhook(config, projectName) {
+    const projectConfig = config?.serverWebhookMap?.[projectName];
+    if (!projectConfig?.hookUrl) {
+      vscode.window.showErrorMessage(`未找到 ${projectName} 的配置信息`);
+      return;
+    }
+
+    const { hookUrl: webhookUrl, webUrl } = projectConfig;
+    const feishuId = vscode.workspace.getConfiguration("gitMergeBranchTo").get("feishuId");
+    const data = JSON.stringify({ feishuId, branch: config.defaultBranch });
+    try {
+      execSync(
+        `curl --header "Content-Type: application/json" --request POST --data '${data}' ${webhookUrl}`,
+        EXEC_SYNC_OPTIONS
+      );
+      vscode.window
+        .showInformationMessage(
+          `触发 webhook 成功。${webUrl ? `[查看流水线](${webUrl})` : ""}`,
+          { modal: false },
+          { title: "Open in Browser", command: "vscode.open" }
+        )
+        .then((selection) => {
+          if (selection?.command === "vscode.open") {
+            vscode.env.openExternal(vscode.Uri.parse(webUrl));
+          }
+        });
+    } catch (error) {
+      vscode.window.showErrorMessage(`触发 webhook 失败: ${error.message}`);
+    }
   }
 }
 

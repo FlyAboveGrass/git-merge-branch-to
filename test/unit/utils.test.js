@@ -16,7 +16,7 @@ Module._load = function patchedLoad(request, parent, isMain) {
 	return originalLoad.call(this, request, parent, isMain);
 };
 
-const { resolveGitProjectName } = require('../../utils');
+const { findAutomaticWebhookEnvironment, resolveGitProjectName } = require('../../utils');
 
 Module._load = originalLoad;
 
@@ -28,5 +28,38 @@ describe('resolveGitProjectName', () => {
 		});
 
 		assert.strictEqual(projectName, 'monkey-saas-web');
+	});
+});
+
+describe('findAutomaticWebhookEnvironment', () => {
+	// 自动触发必须由项目级 autoTriggerBranch 决定，不能误用环境的 defaultBranch。
+	it('matches the project webhook by merged target branch', () => {
+		// 两个环境故意使用相同 defaultBranch，用来对抗仅按环境默认分支匹配的错误实现。
+		const developConfig = {
+			env: 'dev',
+			defaultBranch: 'develop',
+			serverWebhookMap: {
+				'monkey-saas-web': { hookUrl: 'https://example.com/dev' },
+			},
+		};
+		const uatConfig = {
+			env: 'uat',
+			defaultBranch: 'develop',
+			serverWebhookMap: {
+				'monkey-saas-web': {
+					hookUrl: 'https://example.com/uat',
+					autoTriggerBranch: 'uat',
+				},
+			},
+		};
+
+		assert.strictEqual(
+			findAutomaticWebhookEnvironment([developConfig, uatConfig], 'monkey-saas-web', 'uat'),
+			uatConfig
+		);
+		assert.strictEqual(
+			findAutomaticWebhookEnvironment([developConfig, uatConfig], 'monkey-saas-web', 'develop'),
+			undefined
+		);
 	});
 });

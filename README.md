@@ -46,6 +46,8 @@
     "develop",
     "uat"
   ],
+  // webhook 触发方式：manual（手动选择环境）或 automatic（按合并目标分支自动触发）
+  "gitMergeBranchTo.webhookTriggerMode": "manual",
   // 配置分支合并后的流水线触发配置。没有可不填
   "gitMergeBranchTo.deployConfig": {
     "projectList": ["monkey-cms-web-new", "monkey-saas-enterprise-web", "monkey-saas-web"], // 没用。跟 webstorm 的配置保持一致
@@ -57,7 +59,8 @@
         "serverWebhookMap": { // 关键配置。项目及其流水线配置
           "project-name": { // 项目名称
             "hookUrl": "http://flow-openapi.aliyun.com/pipeline/webhook/IQJpnlAfnzicJul0WIKK", // 触发的 webhook 地址
-            "webUrl": "https://flow.aliyun.com/pipelines/2948323/current" // 流水线地址，方便触发后查看流水线状态。可不填
+            "webUrl": "https://flow.aliyun.com/pipelines/2948323/current", // 流水线地址，方便触发后查看流水线状态。可不填
+            "autoTriggerBranch": "develop" // automatic 模式下，合并到该分支时自动触发此 webhook
           }
         }
       }
