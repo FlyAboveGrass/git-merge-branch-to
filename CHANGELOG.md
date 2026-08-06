@@ -4,6 +4,12 @@ All notable changes to the "merge-code" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.3.0] - 2026-08-06
+
+### Added
+- 新增 webhook 自动/手动触发配置，默认保持手动选择环境
+- 自动模式支持按项目和合并目标分支直接触发对应 webhook
+
 ## [1.2.5] - 2026-07-22
 
 ### Fixed
