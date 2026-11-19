@@ -4,6 +4,12 @@ All notable changes to the "merge-code" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.4.0] - 2026-11-19
+
+### Added
+- 未配置目标分支时支持将 `dev/*` 分支合并到对应的 `release/*` 分支
+
+
 ## [1.3.0] - 2026-08-06
 
 ### Added

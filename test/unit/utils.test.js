@@ -16,7 +16,7 @@ Module._load = function patchedLoad(request, parent, isMain) {
 	return originalLoad.call(this, request, parent, isMain);
 };
 
-const { findAutomaticWebhookEnvironment, resolveGitProjectName } = require('../../utils');
+const { findAutomaticWebhookEnvironment, resolveGitProjectName, resolveReleaseBranch } = require('../../utils');
 
 Module._load = originalLoad;
 
@@ -61,5 +61,16 @@ describe('findAutomaticWebhookEnvironment', () => {
 			findAutomaticWebhookEnvironment([developConfig, uatConfig], 'monkey-saas-web', 'develop'),
 			undefined
 		);
+	});
+});
+
+describe('resolveReleaseBranch', () => {
+	it('maps dev and feature branches to release branches', () => {
+		assert.strictEqual(resolveReleaseBranch('dev/order'), 'release/order');
+		assert.strictEqual(resolveReleaseBranch('feature/order'), 'release/order');
+	});
+
+	it('keeps unrelated branch prefixes unchanged', () => {
+		assert.strictEqual(resolveReleaseBranch('hotfix/order'), 'hotfix/order');
 	});
 });

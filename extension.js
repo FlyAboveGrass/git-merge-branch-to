@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { execSync } = require("child_process");
-const { findAutomaticWebhookEnvironment, getGitProjectName } = require("./utils");
+const { findAutomaticWebhookEnvironment, getGitProjectName, resolveReleaseBranch } = require("./utils");
 
 const CANCEL = "退出操作";
 
@@ -195,7 +195,7 @@ function manageWorktrees() {
   // 适配预约小程序，不配置分支
   if (!branches || !branches.length) {
     const sourceBranch = getCurrentBranchName();
-    const targetBranch = sourceBranch.replace("feature/", "release/");
+    const targetBranch = resolveReleaseBranch(sourceBranch);
     const repoPath = vscode.workspace.rootPath;
     const isExistRemoteTargetBranch = execSync(
       `git -C "${repoPath}" ls-remote --heads origin ${targetBranch}`,

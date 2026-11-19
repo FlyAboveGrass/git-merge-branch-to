@@ -39,6 +39,11 @@ function findAutomaticWebhookEnvironment(urlConfigs, projectName, targetBranch) 
 	);
 }
 
+// 无目标分支配置时，将开发分支映射到对应的 release 分支。
+function resolveReleaseBranch(sourceBranch) {
+	return sourceBranch.replace(/^(?:dev|feature)\//, 'release/');
+}
+
 async function getGitProjectName() {
   const rootUri = vscode.workspace.workspaceFolders?.[0].uri; // 获取第一个工作空间的根目录 URI
   if (!rootUri) {
@@ -67,6 +72,7 @@ async function getGitProjectName() {
 
 module.exports = {
   findAutomaticWebhookEnvironment,
+	resolveReleaseBranch,
   resolveGitProjectName,
   getGitProjectName,
 };
